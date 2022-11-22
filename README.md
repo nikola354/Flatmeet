@@ -1,4 +1,4 @@
-# NOIT-projects
+# Flatmeet
 
 Repository for the projects we made when we participated in the National Olympiad in Information Technology (NOIT). 
 
