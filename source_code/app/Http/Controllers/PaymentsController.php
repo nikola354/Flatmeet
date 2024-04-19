@@ -48,8 +48,7 @@ class PaymentsController extends Controller
                 $suffix = $image->getClientOriginalExtension();
 
                 $fileName = date_timestamp_get(Carbon::now()) . "." . $suffix;
-                $imagesPath = env('APP_ENV') === 'production' ? dirname(__DIR__, 4) . 'www/uploadedImages' : dirname(__DIR__, 3) . '/public/uploadedImages/'; // path of all uploaded images
-
+                $imagesPath = dirname(__DIR__, 3) . env('IMAGES_PATH'); // path of all uploaded images
                 $image->move($imagesPath, $fileName); // upload new image onto server
             }
         }
@@ -128,40 +127,73 @@ class PaymentsController extends Controller
         $payments = null;
         if ($month !== null && $type !== null) {
             if ($type === "allPayments") {
-                $payments = DB::table('payments')
-                    ->select(DB::raw('sum(payments.is_paid) as is_paid'), DB::raw('sum(payments.value) as value'),
-                        DB::raw('count(payments.is_paid) as payments_number'), 'apartments.number', 'apartments.floor', 'apartments.family_name')
-                    ->join('apartments', 'apartments.number', '=', 'payments.ap_num')
-                    ->where([
-                        ['payments.month', '=', $month],
-                        ['payments.building_code', $code],
-                        ['apartments.building_code', $code]
-                    ])
-                    ->groupBy('apartments.number')
-                    ->orderBy('apartments.number')
-                    ->get();
-                foreach ($payments as $p) {
-                    if ($p->is_paid == $p->payments_number) $p->is_paid = 1;
-                    else $p->is_paid = 0;
-                }
+                $payments = $this->getAllPayments($code, $month);
             } else {
-                $payments = DB::table('payments')
-                    ->select('payments.is_paid', 'payments.value', 'apartments.number', 'apartments.floor',
-                        'apartments.family_name', 'payments.file_name')
-                    ->join('apartments', 'apartments.number', '=', 'payments.ap_num')
-                    ->where([
-                        ['payments.month', '=', $month],
-                        ['payments.type', '=', $type],
-                        ['payments.building_code', $code],
-                        ['apartments.building_code', $code]
-                    ])
-                    ->orderBy('apartments.number')
-                    ->get();
+                $payments = $this->getPaymentsForType($code, $month, $type);
             }
         }
 
         return view('payments', ['building' => $building, 'paymentsTypes' => $paymentsNames, 'minMonth' => $firstMonth,
             'maxMonth' => $lastMonth, 'payments' => $payments, 'month' => $month, 'type' => $type]);
+    }
+
+    private function getAllPayments($code, $month, $orderBy = null, $direction = null)
+    {
+        $payments = DB::table('payments')
+            ->select(DB::raw('sum(payments.is_paid) as is_paid'), DB::raw('sum(payments.value) as value'),
+                DB::raw('count(payments.is_paid) as payments_number'), 'apartments.number', 'apartments.floor', 'apartments.family_name')
+            ->join('apartments', 'apartments.number', '=', 'payments.ap_num')
+            ->where([
+                ['payments.month', '=', $month],
+                ['payments.building_code', $code],
+                ['apartments.building_code', $code]
+            ])
+            ->groupBy('apartments.number');
+
+        if (isset($orderBy) && isset($direction)) {
+            if ($direction === "asc") {
+                $payments->orderBy($orderBy);
+            } else {
+                $payments->orderByDesc($orderBy);
+            }
+        } else {
+            $payments->orderBy('apartments.number');
+        }
+
+        $payments = $payments->get();
+
+        foreach ($payments as $p) {
+            if ($p->is_paid == $p->payments_number) $p->is_paid = 1;
+            else $p->is_paid = 0;
+        }
+
+        return $payments;
+    }
+
+    private function getPaymentsForType($code, $month, $type, $orderBy = null, $direction = null)
+    {
+        $payments = DB::table('payments')
+            ->select('payments.is_paid', 'payments.value', 'apartments.number', 'apartments.floor',
+                'apartments.family_name', 'payments.file_name')
+            ->join('apartments', 'apartments.number', '=', 'payments.ap_num')
+            ->where([
+                ['payments.month', '=', $month],
+                ['payments.type', '=', $type],
+                ['payments.building_code', $code],
+                ['apartments.building_code', $code]
+            ]);
+
+        if (isset($orderBy) && isset($direction)) {
+            if ($direction === "asc") {
+                $payments->orderBy($orderBy);
+            } else {
+                $payments->orderByDesc($orderBy);
+            }
+        } else {
+            $payments->orderBy('apartments.number');
+        }
+
+        return $payments->get();
     }
 
     public function changeIsPaid($code, $month, $type, $apNum, $isPaid)
@@ -208,32 +240,13 @@ class PaymentsController extends Controller
             ->orderByDesc('month')
             ->first();
 
-        if ($direction === "asc") {
-            $payments = DB::table('payments')
-                ->select('payments.is_paid', 'payments.value', 'apartments.number', 'apartments.floor',
-                    'apartments.family_name')
-                ->join('apartments', 'apartments.number', '=', 'payments.ap_num')
-                ->where([
-                    ['payments.month', '=', $month],
-                    ['payments.type', '=', $type],
-                    ['payments.building_code', $code],
-                    ['apartments.building_code', $code]
-                ])
-                ->orderBy($orderBy)
-                ->get();
-        } else {
-            $payments = DB::table('payments')
-                ->select('payments.is_paid', 'payments.value', 'apartments.number', 'apartments.floor',
-                    'apartments.family_name')
-                ->join('apartments', 'apartments.number', '=', 'payments.ap_num')
-                ->where([
-                    ['payments.month', '=', $month],
-                    ['payments.type', '=', $type],
-                    ['payments.building_code', $code],
-                    ['apartments.building_code', $code]
-                ])
-                ->orderByDesc($orderBy)
-                ->get();
+        $payments = null;
+        if ($month !== null && $type !== null) {
+            if ($type === "allPayments") {
+                $payments = $this->getAllPayments($code, $month, $orderBy, $direction);
+            } else {
+                $payments = $this->getPaymentsForType($code, $month, $type, $orderBy, $direction);
+            }
         }
 
         //стрелка нагоре/надолу в зависимост от посоката на сортиране

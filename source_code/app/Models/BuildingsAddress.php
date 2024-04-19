@@ -13,7 +13,14 @@ class BuildingsAddress extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-    	'short_address',
-    	'full_address'
+        'short_address',
+        'full_address'
     ];
+
+    protected function setKeysForSaveQuery($query)
+    {
+        $query->where('building_code', $this->getAttribute('building_code'));
+        return $query;
+    }
+
 }

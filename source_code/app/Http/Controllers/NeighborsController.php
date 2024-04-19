@@ -51,7 +51,7 @@ class NeighborsController extends Controller
             return response()->json(['ok' => false, 'error' => __('Нещо се обърка')]);
         }
 
-        return response()->json(['ok' => true, 'msg' => __('Успешно заяви желание да се присъединиш към '). $building->short_address . '! ' . __('След като домоуправителят на входа те одобри, ще можеш да общуваш със своите съседи онлайн!')]);
+        return response()->json(['ok' => true, 'msg' => __('Успешно заяви желание да се присъединиш към ') . $building->short_address . '! ' . __('След като домоуправителят на входа те одобри, ще можеш да общуваш със своите съседи онлайн!')]);
 
     }
 
@@ -125,30 +125,43 @@ class NeighborsController extends Controller
         if ($authNeighbor->rights === 'neighbor' || ($authNeighbor->rights === 'treasurer' && $newRights !== 'treasurer'))
             return response()->json(['ok' => false, 'error' => __('Нещо се обърка')]);
 
-        $toChange = Neighbor::where('email', $email)
+        $neighborToChange = Neighbor::where('email', $email)
             ->where('building_code', $code)
             ->first();
 
-        if ($toChange->rights === 'admin') return response()->json(['ok' => false, 'error' => __('Нещо се обърка')]);
+        //todo uncomment the line below to avoid editing rights of admin users
+//        if ($toChange->rights === 'admin') return response()->json(['ok' => false, 'error' => __('Нещо се обърка')]);
 
-        if($newRights === "kickOut"){
-            $toChange->status = "denied";
-        }else{
-            $toChange->rights = $newRights;
+        if ($newRights === 'admin' && $this->getAdminsCount($code) >= 2) {
+            return response()->json(['ok' => false, 'error' => __('Не може да има повече от двама домоуправители!')]);
         }
 
-        $toChange->update();
+        if ($newRights === "kickOut") {
+            $neighborToChange->status = "denied";
+        } else {
+            $neighborToChange->rights = $newRights;
+        }
+
+        $neighborToChange->update();
 
         return response()->json(['ok' => true]);
     }
 
+    private function getAdminsCount(string $code)
+    {
+        return Neighbor::where('rights', 'admin')
+            ->where('building_code', $code)
+            ->count();
+    }
 
-    public function redirectToMainPage($code){
-        $neighbor = Neighbor::where('email', auth()->user()->email)->first();
 
-        if($neighbor->rights === 'admin') return redirect(route('waitingRoom', $code));
+    public function redirectToMainPage($code)
+    {
+        $neighbor = Neighbor::where('email', auth()->user()->email)->where('building_code', $code)->first();
 
-        if($neighbor->rights === 'treasurer') return redirect(route('addPayment', $code));
+        if ($neighbor->rights === 'admin') return redirect(route('waitingRoom', $code));
+
+        if ($neighbor->rights === 'treasurer') return redirect(route('addPayment', $code));
 
         return redirect(route('neighbors', $code));
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -33,5 +34,13 @@ class Neighbor extends Model
 
     public function isTreasurer(){
         return $this->rights === self::TREASURER_TYPE;
+    }
+
+    protected function setKeysForSaveQuery($query)
+    {
+        foreach ($this->primaryKey as $key) {
+            $query->where($key, $this->getAttribute($key));
+        }
+        return $query;
     }
 }

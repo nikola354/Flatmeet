@@ -22,8 +22,9 @@
                                         <button class="btn login_btn"><b>{{__('Съобщение')}}</b></button>
                                     </a>
                                 </div>
+{{--                                todo uncomment the line below to avoid editing rights of admin users--}}
                                 {{--   the rights of the neighbor can be changed only if the neighbor is not admin: --}}
-                                @if($n->rights !== 'admin')
+{{--                                @if($n->rights !== 'admin')--}}
                                     <div class="col-md-8">
                                         {{--    if the curent user is signed in as treasurer, they can change the rights of a neighbor only to treasurer--}}
                                     @if(auth()->user()->isTreasurer($building->building_code) && $n->rights === 'neighbor')
@@ -38,18 +39,20 @@
                                             <select class="btn btn-secondary rightsSelect options"
                                                     data-email="{{$n->email}}" data-code="{{$building->building_code}}">
                                                 <option selected>{{__('Промяна на правата')}}</option>
-                                                @if($n->rights === 'treasurer')
+                                                @if($n->rights !== 'neighbor')
                                                     <option value="neighbor">{{__('Съсед')}}</option>
-                                                @else
+                                                @endif
+                                                @if ($n->rights !== 'treasurer')
                                                     <option value="treasurer">{{__('Касиер')}}</option>
                                                 @endif
-                                                <option value="admin">{{__('Домоуправител')}}</option>
-                                                {{--if the neighbor is admin, they can kick out everybody except admins--}}
+                                                @if ($n->rights !== 'admin')
+                                                    <option value="admin">{{__('Домоуправител')}}</option>
+                                                @endif
                                                 <option value="kickOut">{{__('Изгонване от входа')}}</option>
                                             </select>
                                         @endif
                                     </div>
-                                @endif
+{{--                                @endif--}}
                             </div>
                         </div>
                     </div>

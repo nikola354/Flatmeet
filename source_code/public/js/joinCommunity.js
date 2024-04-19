@@ -78,9 +78,6 @@ $(document).ready(function () {
             ok = false;
             error = "Номерът на апартамента трябва да съдържа само цифри!";
 
-        } else if (ap === 0) {
-            ok = false;
-            error = "Номерът на апартамента не може да бъде 0!";
         } else if (ap > 500) {
             ok = false;
             error = "Номерът на апартамента не може да бъде повече от 500!";
@@ -149,9 +146,6 @@ $(document).ready(function () {
             if (isNaN(floor)) {
                 ok = false;
                 error = "Етажът трябва да съдържа само цифри!";
-            } else if (floor === 0) {
-                ok = false;
-                error = "Етажът не може да бъде 0!";
             } else if (floor > 100) {
                 ok = false;
                 error = "Етажът не може да бъде повече от 100!";

@@ -15,13 +15,13 @@ class CommunitiesController extends Controller
         $request->validate([
             'shortAddress' => 'required|min:7|max:128',
             'fullAddress' => 'required|min:12|max:360',
-            'apNumber' => 'required|regex:/^[0-9]+/|not_in:0|max:3',
-            'floor' => 'required|regex:/^[0-9]+/|not_in:0|max:2',
+            'apNumber' => 'required|regex:/^[0-9]+/|max:3',
+            'floor' => 'required|regex:/^[0-9]+/|max:2',
             'family' => 'max:100'
         ]);
 
         //Създаване на случаен уникален код
-        $codeCheck = "";
+        $codeCheck = new BuildingsAddress();
         $buildingCode = "";
         while ($codeCheck !== null) {
             $buildingCode = "";
